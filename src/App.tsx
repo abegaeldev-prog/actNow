@@ -1,137 +1,55 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getTodos } from "./services/todoService";
 
 interface Todo {
   id: number;
-  text: string;
-  completed: boolean;
+  task: string;
+  completed: number;
 }
 
 function App() {
-  const [todo, setTodo] = useState("");
   const [todos, setTodos] = useState<Todo[]>([]);
-  const [editingId, setEditingId] = useState<number | null>(null);
 
-  const addOrUpdateTodo = () => {
-    if (todo.trim() === "") return;
+  useEffect(() => {
+    loadTodos();
+  }, []);
 
-    if (editingId !== null) {
-      setTodos(
-        todos.map((item) =>
-          item.id === editingId ? { ...item, text: todo } : item
-        )
-      );
-
-      setEditingId(null);
-    } else {
-      const newTodo: Todo = {
-        id: Date.now(),
-        text: todo,
-        completed: false,
-      };
-
-      setTodos([...todos, newTodo]);
-    }
-
-    setTodo("");
-  };
-
-  const toggleComplete = (id: number) => {
-    setTodos(
-      todos.map((item) =>
-        item.id === id
-          ? { ...item, completed: !item.completed }
-          : item
-      )
-    );
-  };
-
-  const editTodo = (item: Todo) => {
-    setTodo(item.text);
-    setEditingId(item.id);
-  };
-
-  const deleteTodo = (id: number) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this todo?"
-    );
-
-    if (confirmDelete) {
-      setTodos(todos.filter((item) => item.id !== id));
+  const loadTodos = async () => {
+    try {
+      const data = await getTodos();
+      setTodos(data);
+    } catch (error) {
+      console.error("Error loading todos:", error);
     }
   };
 
   return (
-    <div
-      style={{
-        width: "500px",
-        margin: "40px auto",
-        fontFamily: "Arial",
-      }}
-    >
+    <div style={{ padding: "20px", fontFamily: "Arial" }}>
       <h1>Todo List</h1>
 
-      <input
-        type="text"
-        placeholder="Enter todo..."
-        value={todo}
-        onChange={(e) => setTodo(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            addOrUpdateTodo();
-          }
-        }}
-      />
-
-      <button onClick={addOrUpdateTodo}>
-        {editingId ? "Update" : "Add"}
-      </button>
-
-      <hr />
-
       {todos.length === 0 ? (
-        <p>No todos yet.</p>
+        <p>No todos found.</p>
       ) : (
-        <table width="100%" cellPadding={10}>
+        <table border={1} cellPadding={10}>
           <thead>
             <tr>
-              <th>Done</th>
+              <th>ID</th>
               <th>Task</th>
-              <th>Actions</th>
+              <th>Completed</th>
             </tr>
           </thead>
 
           <tbody>
-            {todos.map((item) => (
-              <tr key={item.id}>
-                <td align="center">
+            {todos.map((todo) => (
+              <tr key={todo.id}>
+                <td>{todo.id}</td>
+                <td>{todo.task}</td>
+                <td>
                   <input
                     type="checkbox"
-                    checked={item.completed}
-                    onChange={() => toggleComplete(item.id)}
+                    checked={todo.completed === 1}
+                    readOnly
                   />
-                </td>
-
-                <td
-                  style={{
-                    textDecoration: item.completed
-                      ? "line-through"
-                      : "none",
-                  }}
-                >
-                  {item.text}
-                </td>
-
-                <td>
-                  <button onClick={() => editTodo(item)}>
-                    Update
-                  </button>
-
-                  <button
-                    style={{ marginLeft: 10 }}
-                    onClick={() => deleteTodo(item.id)}
-                  >
-                    Delete
-                  </button>
                 </td>
               </tr>
             ))}
